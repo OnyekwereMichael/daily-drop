@@ -14,7 +14,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
   return (
     <Text
       style={[
-        { color: theme[themeColor ?? 'text'] },
+        { color: theme[themeColor ?? 'textPrimary'] },
         type === 'default' && styles.default,
         type === 'title' && styles.title,
         type === 'small' && styles.small,
@@ -32,35 +32,42 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
 
 const styles = StyleSheet.create({
   small: {
+    fontFamily: 'ClashDisplay-Medium',
     fontSize: 14,
     lineHeight: 20,
     fontWeight: 500,
   },
   smallBold: {
+    fontFamily: 'ClashDisplay-Bold',
     fontSize: 14,
     lineHeight: 20,
     fontWeight: 700,
   },
   default: {
+    fontFamily: 'ClashDisplay-Medium',
     fontSize: 16,
     lineHeight: 24,
     fontWeight: 500,
   },
   title: {
+    fontFamily: 'ClashDisplay-Semibold',
     fontSize: 48,
     fontWeight: 600,
     lineHeight: 52,
   },
   subtitle: {
+    fontFamily: 'ClashDisplay-Semibold',
     fontSize: 32,
     lineHeight: 44,
     fontWeight: 600,
   },
   link: {
+    fontFamily: 'ClashDisplay-Regular',
     lineHeight: 30,
     fontSize: 14,
   },
   linkPrimary: {
+    fontFamily: 'ClashDisplay-Regular',
     lineHeight: 30,
     fontSize: 14,
     color: '#3c87f7',
