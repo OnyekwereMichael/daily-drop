@@ -24,7 +24,7 @@ const SLIDES = [
   {
     id: '1',
     title: 'Your Home, Fully Stocked',
-    description: 'Welcome to Daily Drop! From groceries to everyday household essentials.',
+    description: 'Welcome to Daily Drop, From groceries to everyday household essentials.',
     imageUrl: require('../public/assets/images/Shopping bag-bro.svg'),
   },
   {

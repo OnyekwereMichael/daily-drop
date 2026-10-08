@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
-// 1. Added ScrollView to the imports below
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Dimensions, Image, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView, ActivityIndicator } from 'react-native';
+import { Redirect, router } from 'expo-router';
 import { Colors, BorderRadius, Shadows } from '@/constants/theme';
-import Svg, { Path, G } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { Feather } from '@expo/vector-icons';
-import SignupScreen from './signup';
-import LoginScreen from './login';
-import CustomInput from '@/components/CustomInput';
+import { useFormik } from 'formik';
+import SignupForm, { SignupValues } from '@/components/SignupForm';
+import LoginForm from '@/components/LoginForm';
+import Toast from 'react-native-toast-message';
+import { useAuth } from '@/context/auth-context';
+import { loginValidationSchema, signupValidationSchema } from '@/lib/validation';
+import { UserRole } from '@daily-drop/types';
 
 const { width } = Dimensions.get('window');
 
@@ -41,31 +44,108 @@ export const FacebookIcon = () => (
     </Svg>
 );
 
+
+
 export default function AuthLayout() {
     const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+    const { login, register, isLoading, user } = useAuth();
+
+    const navigateToDashboard = (role: string) => {
+        switch (role) {
+            case UserRole.USER:
+                router.replace('/(customer)');
+                break;
+            case UserRole.DRIVER:
+                router.replace('/(driver)');
+                break;
+            case UserRole.STOREOWNER:
+                router.replace('/(owner)');
+                break;
+            default:
+                router.replace('/(customer)');
+                break;
+        }
+    };
+
+    const loginFormik = useFormik({
+        initialValues: { email: '', password: '' },
+        validationSchema: loginValidationSchema,
+        onSubmit: async (values) => {
+            try {
+                const loggedInUser = await login(values.email, values.password);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Success',
+                    text2: 'Logged in successfully',
+                });
+                navigateToDashboard(loggedInUser.role);
+            } catch (error: any) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Login Failed',
+                    text2: error?.response?.data?.message || 'Invalid credentials or network error',
+                });
+            }
+        },
+    });
+
+    const signupFormik = useFormik<SignupValues>({
+        initialValues: {
+            firstName: '',
+            lastName: '',
+            email: '',
+            phoneNumber: '',
+            password: '',
+            confirmPassword: '',
+            role: 'USER',
+        },
+        validationSchema: signupValidationSchema,
+        onSubmit: async (values) => {
+            try {
+                await register({
+                    firstName: values.firstName,
+                    lastName: values.lastName,
+                    email: values.email,
+                    phoneNumber: values.phoneNumber,
+                    password: values.password,
+                    role: values.role,
+                });
+                Toast.show({
+                    type: 'success',
+                    text1: 'Success',
+                    text2: 'Account created successfully',
+                });
+                navigateToDashboard(values.role);
+            } catch (error: any) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Registration Failed',
+                    text2: error?.response?.data?.message || 'An error occurred during registration',
+                });
+            }
+        },
+    });
+
+    const activeFormik = activeTab === 'login' ? loginFormik : signupFormik;
 
     return (
         <View style={styles.container}>
             {/* Top Banner Block Pattern */}
             <View style={styles.topHeaderBlock}>
-                {/* Back Button */}
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Text style={styles.backButtonText}><Feather name="arrow-left" size={24} color="white" /></Text>
                 </TouchableOpacity>
 
-                {/* Dynamic Header Titles Based on UI Pattern */}
                 <Text style={styles.headerTitle}>
                     {activeTab === 'login' ? 'Go ahead and complete your account and setup' : 'Sign up now to access your personal account'}
                 </Text>
             </View>
 
-            {/* 2. Swapped View for ScrollView and added contentContainerStyle */}
             <ScrollView
                 style={styles.formSurface}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-
                 <View style={styles.tabContainer}>
                     <TouchableOpacity
                         style={[styles.tabButton, activeTab === 'login' && styles.activeTabButton]}
@@ -84,17 +164,10 @@ export default function AuthLayout() {
                 {/* Inputs Form */}
                 <View style={styles.form}>
                     {activeTab === 'signup' ? (
-                        <>
-                            <SignupScreen />
-                            <CustomInput
-                                label="Confirm Password"
-                                placeholder="Re-enter your password"
-                                secureTextEntry
-                            />
-                        </>
+                        <SignupForm formik={signupFormik} />
                     ) : (
                         <>
-                            <LoginScreen />
+                            <LoginForm formik={loginFormik} />
                             {/* Remember Me & Forgot Password Row */}
                             <View style={styles.utilitiesRow}>
                                 <TouchableOpacity style={styles.checkboxRow}>
@@ -111,19 +184,18 @@ export default function AuthLayout() {
                     {/* Main Primary Action Button */}
                     <TouchableOpacity
                         style={styles.primaryButton}
-                        onPress={() => router.replace('/(tabs)')}
+                        onPress={() => activeFormik.handleSubmit()}
+                        disabled={isLoading}
                     >
                         <Text style={styles.primaryButtonText}>
-                            {activeTab === 'login' ? 'Login' : 'Register'}
+                            {isLoading ? <ActivityIndicator size="small" color="#fff" /> : (activeTab === 'login' ? 'Login' : 'Register')}
                         </Text>
                     </TouchableOpacity>
 
                     {/* Alternative Multi-Auth Platform Options */}
-                    {activeTab === 'login' && <>
-                        <Text style={styles.dividerText}>Or login with</Text>
-                    </> || activeTab === 'signup' && <>
-                        <Text style={styles.dividerText}>Or register with</Text>
-                    </>}
+                    <Text style={styles.dividerText}>
+                        {activeTab === 'login' ? 'Or login with' : 'Or register with'}
+                    </Text>
 
                     <View style={styles.socialRow}>
                         <TouchableOpacity style={styles.socialButton}>
@@ -187,11 +259,10 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 28,
         marginTop: -24,
     },
-    // 3. Added this to structure the padding inside the ScrollView correctly
     scrollContent: {
         paddingHorizontal: 22,
         paddingTop: 24,
-        paddingBottom: 40, // Ensures extra breathing room at the bottom when scrolled
+        paddingBottom: 40,
     },
     tabContainer: {
         flexDirection: 'row',
@@ -305,7 +376,6 @@ const styles = StyleSheet.create({
     primaryButtonText: {
         color: Colors.surface,
         fontSize: 15,
-        // fontWeight: '700',
         fontFamily: 'ClashDisplay-Medium',
     },
     dividerText: {

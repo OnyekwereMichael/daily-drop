@@ -1,15 +1,16 @@
-export enum UserRole {
-    ADMIN = 'ADMIN',
-    USER = 'USER',
-    DRIVER = 'DRIVER',
-}
+export const UserRole = {
+    STOREOWNER: 'STOREOWNER',
+    USER: 'USER',
+    DRIVER: 'DRIVER',
+} as const;
+
+export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 export interface User {
     id: string;
     firstName: string;
     lastName: string;
     email: string;
-    phoneNumber: string;
     role: UserRole;
     createdAt: string;
     updatedAt: string;
@@ -18,4 +19,10 @@ export interface User {
 export interface HealthCheckResponse {
     status: string;
     timestamp: Date
+}
+
+export interface JwtPayload {
+    sub: string;
+    email: string;
+    role: UserRole;
 }
